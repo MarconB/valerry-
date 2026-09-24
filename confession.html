@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>a small confession</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blush:#F7A8B8; --softpink:#FFD1DC; --warmyellow:#FFE680; --butter:#FFF2A6;
+    --cream:#FFF8E7; --coral:#F27F8D; --ink:#5A3D45;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'EB Garamond', Georgia, serif;
+    color:var(--ink);
+    background: var(--softpink);
+    overflow:hidden;
+    min-height:100%;
+  }
+  .hand{ font-family:'Caveat','Segoe Script',cursive; }
+
+  #stage{ position:relative; width:100%; height:100vh; height:100dvh; }
+
+  .screen{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:8vh 6vw;
+    opacity:0; pointer-events:none;
+    transition:opacity 1s ease;
+  }
+  .screen.active{ opacity:1; pointer-events:auto; }
+
+  .line{ opacity:0; transform:translateY(10px); animation:rise .9s ease forwards; }
+  @keyframes rise{ to{opacity:1; transform:translateY(0);} }
+
+  .whisper{ font-size:clamp(1.3rem,3.4vw,2rem); font-style:italic; max-width:34ch; line-height:1.5; }
+  .soft{ font-size:clamp(1rem,2.2vw,1.25rem); max-width:40ch; line-height:1.6; margin-top:1rem; color:var(--ink); opacity:.85; }
+  .big{ font-family:'Caveat',cursive; font-weight:700; font-size:clamp(2.4rem,7vw,4.2rem); color:var(--coral); line-height:1.15; max-width:16ch; }
+
+  button{
+    font-family:'EB Garamond', Georgia, serif; font-size:1rem; letter-spacing:.02em;
+    padding:.75em 1.8em; margin-top:2.2rem; border-radius:999px; cursor:pointer;
+    border:1px solid var(--coral); background:transparent; color:var(--coral);
+    transition:background .35s ease, color .35s ease, transform .2s ease;
+  }
+  button:hover{ background:var(--coral); color:var(--cream); transform:translateY(-2px); }
+  button:focus-visible{ outline:3px solid var(--ink); outline-offset:3px; }
+  .btn-row{ display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; }
+  .btn-quiet{ border-color:var(--ink); color:var(--ink); opacity:.7; }
+  .btn-quiet:hover{ background:var(--ink); color:var(--cream); }
+
+  /* floating field */
+  #field{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+  .bit{ position:absolute; opacity:.55; animation:drift linear infinite; }
+  @keyframes drift{
+    0%{ transform:translateY(0) rotate(0deg); }
+    100%{ transform:translateY(-110vh) rotate(30deg); }
+  }
+  .screen > *{ position:relative; z-index:1; }
+
+  /* envelope */
+  .envelope-wrap{ cursor:pointer; animation:float 4s ease-in-out infinite; }
+  @keyframes float{ 50%{ transform:translateY(-10px); } }
+  .envelope{ width:min(70vw,240px); position:relative; }
+  .env-body{ width:100%; height:150px; background:var(--cream); border:2px solid var(--coral); border-radius:8px; position:relative; box-shadow:0 12px 30px rgba(90,61,69,.18); }
+  .env-flap{ position:absolute; top:0; left:0; width:100%; height:0; border-left:120px solid transparent; border-right:120px solid transparent; border-top:90px solid var(--softpink); transform-origin:top; transition:transform .9s ease; }
+  .env-body::before,.env-body::after{ content:""; position:absolute; top:0; width:0; height:0; border-top:75px solid transparent; }
+  .seal{ position:absolute; left:50%; top:38%; transform:translate(-50%,-50%); width:34px; height:34px; background:var(--coral); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--cream); font-size:1rem; transition:opacity .4s ease, transform .4s ease; }
+  .envelope.open .seal{ opacity:0; transform:translate(-50%,-50%) scale(0); }
+  .envelope.open .env-flap{ transform:rotateX(180deg); }
+  .letter-peek{ position:absolute; top:-10px; left:8%; width:84%; height:60px; background:var(--cream); border:1px solid var(--blush); border-radius:4px 4px 0 0; opacity:0; transition:transform .8s ease .3s, opacity .8s ease .3s; transform:translateY(20px); }
+  .envelope.open .letter-peek{ opacity:1; transform:translateY(-40px); }
+
+  /* vinyl */
+  .vinyl{ width:min(48vw,190px); height:min(48vw,190px); border-radius:50%; background:radial-gradient(circle at center, var(--ink) 0 6%, #3d2830 7% 8%, #1e1417 9% 60%, #2a1c20 61% 100%); position:relative; box-shadow:0 10px 26px rgba(90,61,69,.25); }
+  .vinyl::after{ content:""; position:absolute; inset:38%; border-radius:50%; background:var(--coral); }
+  .vinyl.spin{ animation:spin 3.2s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .bars{ display:flex; gap:5px; align-items:flex-end; height:26px; margin-top:1rem; opacity:0; transition:opacity .5s ease; }
+  .bars.on{ opacity:1; }
+  .bars span{ width:4px; background:var(--coral); border-radius:2px; animation:bar .9s ease-in-out infinite; }
+  .bars span:nth-child(2){ animation-delay:.15s; } .bars span:nth-child(3){ animation-delay:.3s; }
+  .bars span:nth-child(4){ animation-delay:.45s; } .bars span:nth-child(5){ animation-delay:.1s; }
+  @keyframes bar{ 0%,100%{ height:6px; } 50%{ height:24px; } }
+
+  .letter-box{ max-width:52ch; text-align:left; font-size:clamp(1.02rem,2vw,1.18rem); line-height:1.85; }
+  .letter-box p{ margin-bottom:1em; }
+  .sig{ font-family:'Caveat',cursive; font-size:1.6rem; color:var(--coral); margin-top:1rem; }
+
+  .notes{ position:relative; width:min(90vw,700px); height:44vh; }
+  .note{ position:absolute; background:var(--cream); border:1px solid var(--blush); padding:.7em 1.1em; border-radius:6px; font-family:'Caveat',cursive; font-size:1.3rem; box-shadow:0 6px 16px rgba(90,61,69,.12); opacity:0; animation:noteIn 1s ease forwards; }
+  @keyframes noteIn{ to{opacity:1;} }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+
+  #mini-player{
+    position:fixed; bottom:20px; right:20px; z-index:10;
+    display:none; align-items:center; gap:.6rem;
+    background:var(--cream); border:1px solid var(--blush); border-radius:999px;
+    padding:.5rem .9rem .5rem .5rem; box-shadow:0 8px 20px rgba(90,61,69,.2);
+  }
+  #mini-player.show{ display:flex; }
+  #mini-vinyl{ width:34px; height:34px; border-radius:50%; background:radial-gradient(circle at center, var(--ink) 0 22%, #1e1417 23% 60%, #2a1c20 61% 100%); position:relative; }
+  #mini-vinyl.spin{ animation:spin 3.2s linear infinite; }
+  #mini-player span{ font-family:'Caveat',cursive; font-size:1rem; color:var(--ink); }
+  #mini-player button{ margin:0; padding:.25em .8em; font-size:.85rem; }
+</style>
+</head>
+<body>
+
+<div id="field"></div>
+<div id="mini-player">
+  <div id="mini-vinyl"></div>
+  <span>Someday</span>
+  <button onclick="toggleSong()" id="miniBtn">pause</button>
+</div>
+<audio id="song" loop src="somdeday.mp3"></audio>
+<div id="stage">
+
+  <section class="screen active" data-i="0">
+    <p class="whisper hand line">there's something i've been meaning to tell you...</p>
+    <p class="whisper hand line" style="animation-delay:1.4s">so i made this instead.</p>
+    <button class="line" style="animation-delay:2.6s" onclick="go(1)">open this ♡</button>
+  </section>
+
+  <section class="screen" data-i="1">
+    <p class="whisper hand">i don't really know how to say this...<br>so let me try.</p>
+    <div class="envelope-wrap" onclick="openEnvelope(this)" role="button" tabindex="0" aria-label="Open the envelope">
+      <div class="envelope">
+        <div class="env-body"></div>
+        <div class="env-flap"></div>
+        <div class="letter-peek"></div>
+        <div class="seal">♡</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" data-i="2">
+    <p class="whisper hand line">before i tell you everything...</p>
+    <p class="whisper hand line" style="animation-delay:1s">there's a song i want you to hear.</p>
+    <div class="vinyl" id="vinyl" style="margin-top:1.5rem"></div>
+    <p class="hand" style="font-size:1.4rem; margin-top:.6rem;">Someday — The Ridleys</p>
+    <button onclick="playSong()" id="playBtn">play ♪</button>
+    <div class="bars" id="bars"><span></span><span></span><span></span><span></span><span></span></div>
+    <p class="soft" style="margin-top:1.2rem;">listen first.</p>
+    <button onclick="go(3)" class="btn-quiet">continue →</button>
+  </section>
+
+  <section class="screen" data-i="3">
+    <p class="whisper hand">somewhere along the way...<br>i started noticing the little things about you.</p>
+    <div class="notes" id="notes"></div>
+    <p class="soft">and eventually, i realized...</p>
+    <button onclick="go(4)">continue</button>
+  </section>
+
+  <section class="screen" data-i="4">
+    <p class="line" style="font-family:'Caveat',cursive; font-weight:700; font-size:clamp(2.2rem,6vw,3.4rem); color:var(--coral);">i like you.</p>
+    <p class="line whisper hand" style="animation-delay:1.6s">not just casually.</p>
+    <p class="line whisper hand" style="animation-delay:3s">not just because you're beautiful.</p>
+    <p class="line soft" style="animation-delay:4.4s">i genuinely want to know you more.</p>
+    <div class="letter-box line" style="animation-delay:5.6s; margin-top:1.6rem;">
+      <p>This isn't something I'm saying on impulse. I've thought about it, and I keep landing in the same place.</p>
+      <p>I like the way you think about things, the way you show up for people, the little quirks that probably feel ordinary to you but stand out to me.</p>
+      <p>I'm not expecting you to feel the same way right away — this isn't about that. I just didn't want to keep it to myself anymore. I'd rather be honest and let you decide what to do with it.</p>
+    </div>
+    <p class="soft line" style="animation-delay:7s">and that's why i'm here.</p>
+    <button class="line" style="animation-delay:7.6s" onclick="go(5)">continue</button>
+  </section>
+
+  <section class="screen" data-i="5">
+    <p class="whisper hand line">i don't want to rush you.</p>
+    <p class="whisper hand line" style="animation-delay:1.4s">i don't want to ask you for an answer you aren't ready to give.</p>
+    <p class="soft line" style="animation-delay:2.8s">i just want to show you that my intentions are genuine.</p>
+    <p class="big line" style="animation-delay:4.2s">i want to pursue you properly.</p>
+    <p class="whisper hand line" style="animation-delay:5.4s">if you'll let me.</p>
+    <button class="line" style="animation-delay:6s" onclick="go(6)">continue</button>
+  </section>
+
+  <section class="screen" data-i="6">
+    <p class="hand" style="font-size:1.6rem;">so...</p>
+    <p class="big" style="margin-top:.4rem;">would you let me court you?</p>
+    <p class="soft" style="margin-top:1.2rem;">no pressure. no expectations.</p>
+    <p class="soft" style="margin-top:.2rem;">i just wanted to ask you properly.</p>
+    <div class="btn-row">
+      <button onclick="go(7)">I'd like that ♡</button>
+      <button class="btn-quiet" onclick="go(8)">I need some time</button>
+    </div>
+  </section>
+
+  <section class="screen" data-i="7">
+    <p class="whisper hand line">then let me start here...</p>
+    <p class="whisper hand line" style="animation-delay:1.3s">i'll take my time getting to know you.</p>
+    <p class="whisper hand line" style="animation-delay:2.6s">i'll show you through my actions, not just my words.</p>
+    <p class="whisper hand line" style="animation-delay:3.9s">and hopefully, someday...</p>
+    <p class="big line" style="animation-delay:5.2s">we'll look back at this and smile.</p>
+    <button class="line" style="animation-delay:6.4s" onclick="go(9)">continue</button>
+  </section>
+
+  <section class="screen" data-i="8">
+    <p class="whisper hand">that's okay.</p>
+    <p class="soft">take all the time you need. i'm glad i got to be honest with you.</p>
+    <button onclick="go(9)">continue</button>
+  </section>
+
+  <section class="screen" data-i="9">
+    <div class="vinyl" style="width:70px;height:70px;margin-bottom:1.2rem;opacity:.5"></div>
+    <p class="whisper hand">thank you for letting me tell you how i feel.</p>
+    <p class="soft" style="margin-top:1rem;">whatever happens after this, i'm glad i got to be honest with you.</p>
+    <p class="big" style="margin-top:1rem; font-size:3rem;">♡</p>
+    <p class="sig">— Accon</p>
+    <button class="btn-quiet" onclick="go(0)">start again</button>
+  </section>
+
+</div>
+
+<script>
+  function go(i){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.dataset.i==i));
+    if(i==0){ resetExperience(); }
+  }
+
+  function resetExperience(){
+    const env=document.querySelector('.envelope');
+    if(env) env.classList.remove('open');
+
+    const vinyl=document.getElementById('vinyl');
+    const bars=document.getElementById('bars');
+    const btn=document.getElementById('playBtn');
+    if(vinyl) vinyl.classList.remove('spin');
+    if(bars) bars.classList.remove('on');
+    if(btn){ btn.textContent='play ♪'; btn.disabled=false; }
+
+    const mini=document.getElementById('mini-player');
+    const miniVinyl=document.getElementById('mini-vinyl');
+    const miniBtn=document.getElementById('miniBtn');
+    if(mini) mini.classList.remove('show');
+    if(miniVinyl) miniVinyl.classList.remove('spin');
+    if(miniBtn) miniBtn.textContent='pause';
+
+    const audio=document.getElementById('song');
+    if(audio){ audio.pause(); audio.currentTime=0; }
+  }
+
+  function openEnvelope(el){
+    if(el.querySelector('.envelope').classList.contains('open')) return;
+    el.querySelector('.envelope').classList.add('open');
+    setTimeout(()=>go(2), 1400);
+  }
+
+  function playSong(){
+    const vinyl=document.getElementById('vinyl');
+    const bars=document.getElementById('bars');
+    const btn=document.getElementById('playBtn');
+    const audio=document.getElementById('song');
+    const mini=document.getElementById('mini-player');
+    const miniVinyl=document.getElementById('mini-vinyl');
+    const miniBtn=document.getElementById('miniBtn');
+
+    vinyl.classList.add('spin');
+    bars.classList.add('on');
+    btn.textContent='playing ♪ (continues as you read)';
+    btn.disabled=true;
+
+    // Note: no audio file is embedded here (the actual song is copyrighted).
+    // Add your own legally obtained copy, e.g.: audio.src = 'your-file.mp3';
+    if(audio.src){ audio.play().catch(()=>{}); }
+
+    mini.classList.add('show');
+    miniVinyl.classList.add('spin');
+    miniBtn.textContent='pause';
+  }
+
+  function toggleSong(){
+    const audio=document.getElementById('song');
+    const miniVinyl=document.getElementById('mini-vinyl');
+    const miniBtn=document.getElementById('miniBtn');
+    const playing = miniVinyl.classList.toggle('spin');
+    miniBtn.textContent = playing ? 'pause' : 'play';
+    if(audio.src){ playing ? audio.play().catch(()=>{}) : audio.pause(); }
+  }
+
+  // decorative floating field (hearts + tiny flowers), CSS-only shapes
+  (function(){
+    const field=document.getElementById('field');
+    const shapes=['♡','✿','✦'];
+    const colors=['#F27F8D','#F7A8B8','#FFE680'];
+    for(let i=0;i<16;i++){
+      const b=document.createElement('span');
+      b.className='bit';
+      b.textContent=shapes[i%3];
+      b.style.left=Math.random()*100+'vw';
+      b.style.bottom=(-10-Math.random()*20)+'vh';
+      b.style.fontSize=(12+Math.random()*16)+'px';
+      b.style.color=colors[i%3];
+      b.style.animationDuration=(14+Math.random()*10)+'s';
+      b.style.animationDelay=(Math.random()*10)+'s';
+      field.appendChild(b);
+    }
+  })();
+
+  // little handwritten notes on page 4
+  (function(){
+    const notes=['the way you listen','the way you make conversations feel easy','the little things you probably don\'t even notice','the way being around you feels different'];
+    const box=document.getElementById('notes');
+    const positions=[{top:'6%',left:'4%'},{top:'2%',right:'2%'},{bottom:'18%',left:'8%'},{bottom:'4%',right:'6%'}];
+    notes.forEach((t,i)=>{
+      const n=document.createElement('div');
+      n.className='note';
+      n.textContent=t;
+      n.style.animationDelay=(0.6+i*0.9)+'s';
+      Object.assign(n.style, positions[i]);
+      n.style.transform=`rotate(${(i%2?1:-1)*(3+Math.random()*4)}deg)`;
+      box.appendChild(n);
+    });
+  })();
+</script>
+</body>
+</html>
